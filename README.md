@@ -15,22 +15,22 @@ small tool in python for checking sesitive file and xss and html injection vulne
 ---
 
 ## ✨ Features
-Web Crawling: Recursively explores target websites, respecting same-origin by default, with optional subdomain crawling.
+- Web Crawling: Recursively explores target websites, respecting same-origin by default, with optional subdomain crawling.
 
-XSS & HTML Injection Detection: Injects payloads into query parameters and forms to detect reflected vulnerabilities.
+- XSS & HTML Injection Detection: Injects payloads into query parameters and forms to detect reflected vulnerabilities.
 
-Sensitive File Discovery: Checks for exposed sensitive paths and files like .env, .git/, wp-config.php, robots.txt, and more.
+- Sensitive File Discovery: Checks for exposed sensitive paths and files like .env, .git/, wp-config.php, robots.txt, and more.
 
-Reporting: Generates both machine-readable JSON and human-friendly HTML reports, including summaries and direct links to vulnerable URLs.
+- Reporting: Generates both machine-readable JSON and human-friendly HTML reports, including summaries and direct links to vulnerable URLs.
 
-Configurable: Supports async requests, concurrency, and page crawl limits for flexible scanning.
+- Configurable: Supports async requests, concurrency, and page crawl limits for flexible scanning.
 
 ---
 
 ## 📦 Installation
 
 ```bash
-git clone github.com/4ncurze/funkyfuzz
+git clone https://github.com/4ncurze/funkyfuzz
 cd funkyfuzz
 pip install -r requirements.txt --break-system-packages
 
