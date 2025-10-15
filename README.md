@@ -2,7 +2,7 @@
 small tool in python for checking sesitive file and xss and html injection vulnerability
 
 <p align="center">
-  <img src="https://img.shields.io/badge/go4crt.sh-lightgrey?style=for-the-badge&logo=zap&logoColor=white" alt="go4crt.sh" />
+  <img src="https://img.shields.io/badge/funkyfuzz-lightgrey?style=for-the-badge&logo=zap&logoColor=white" alt="go4crt.sh" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge&logo=mit" alt="MIT" />
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge&logo=checkcircle" alt="Active" />
   <img src="https://img.shields.io/badge/For-Bug%20Bounty-red?style=for-the-badge&logo=bug" alt="For Bug Bounty Hunters" />
