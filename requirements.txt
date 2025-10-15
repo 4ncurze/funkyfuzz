@@ -1,0 +1,9 @@
+httpx[http2]>=0.24.0
+beautifulsoup4>=4.11.1
+tldextract>=3.4.0
+aiofiles>=23.1.0
+
+# Optional (useful during development):
+# lxml>=4.9.2   # faster/parsing fallback for BeautifulSoup
+# charset-normalizer>=3.1.0  # httpx dependency on some platforms
+# certifi>=2023.11.7  # CA certs
