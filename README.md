@@ -40,7 +40,7 @@ pip install -r requirements.txt --break-system-packages
 ## 🚀 Usage
 
 ```bash
-python3 funkyfuzz -h 
+python3 funkyfuzz.py -h 
 ```
 `
 
