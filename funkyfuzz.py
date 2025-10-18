@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-Medium-level web scanner: crawling + XSS/HTML injection detection + sensitive file checks.
+FunkyFuzz — medium-level web scanner: crawling + XSS/HTML injection detection + sensitive file checks.
 Outputs: JSON and HTML report + summary printed to stdout.
 
-Enhancement: when an XSS or HTML injection is found, the report now includes the exact vulnerable URL(s) in a dedicated `vulns` list and inside each page entry.
-
 Usage:
-  python xss_htmli_sensitive_scanner.py --url https://example.com --output-dir reports
-  python xss_htmli_sensitive_scanner.py --input-file targets.txt --output-dir reports --concurrency 10
+  python funkyfuzz2.py --url https://example.com --output-dir reports
+  python funkyfuzz2.py --input-file targets.txt --output-dir reports --concurrency 10
 
 Dependencies:
-  pip install httpx[http2] beautifulsoup4 tldextract aiofiles
+  pip install -r requirements.txt
+  (requirements.txt contains: httpx[http2], beautifulsoup4, tldextract, aiofiles)
 
 Notes / ethics:
   Only run against targets you own or have explicit written permission to test.
@@ -28,6 +27,17 @@ from urllib.parse import urljoin, urlparse, parse_qsl, urlencode, urlunparse
 import httpx
 import tldextract
 from bs4 import BeautifulSoup
+from bs4 import XMLParsedAsHTMLWarning, MarkupResemblesLocatorWarning
+import warnings
+
+# Suppress noisy BeautifulSoup warnings
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+
+# Suppress noisy BeautifulSoup warnings
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+
 
 # --- Configuration ---
 SENSITIVE_PATHS = [
@@ -35,16 +45,18 @@ SENSITIVE_PATHS = [
     'database.sql', 'id_rsa', 'id_rsa.pub', 'robots.txt', 'sitemap.xml', '.htaccess', 'error.log'
 ]
 
+# Properly quoted payloads to avoid syntax errors
 XSS_PAYLOADS = [
-    '<XSS_TEST_ANKUR>',
-    '"\'><XSS_TEST_ANKUR>',
-    "'><img src=x onerror=alert(1)>",
+    "<XSS_TEST_ANKUR>",
+    "\"'><XSS_TEST_ANKUR>",         # starts with a double quote then single-quote then >
+    "'><img src=x onerror=alert(1)>",  # starts with single-quote then >
 ]
 
 CRAWL_LIMIT = 200  # max pages per target by default
 TIMEOUT = 15.0
 
 # --- Helpers ---
+
 
 def same_origin(u1, u2):
     p1, p2 = urlparse(u1), urlparse(u2)
@@ -152,7 +164,14 @@ class Scanner:
                     r = await self.fetch(f['action'], method='POST', data=data)
 
                 if r and payload in r.text:
-                    findings.append({'url': target_with_q, 'form_action': f['action'], 'method': f['method'], 'inputs': f['inputs'], 'payload': payload, 'status': r.status_code})
+                    findings.append({
+                        'url': target_with_q,
+                        'form_action': f['action'],
+                        'method': f['method'],
+                        'inputs': f['inputs'],
+                        'payload': payload,
+                        'status': r.status_code
+                    })
         return findings
 
     async def crawl_and_scan(self, start_url):
@@ -186,7 +205,13 @@ class Scanner:
                 results['summary']['xss_positive'] += len(refl)
                 # add to global vuln list with clear url
                 for f in refl:
-                    results['vulns'].append({'type': 'reflected', 'url': f['url'], 'param': f.get('param'), 'payload': f.get('payload'), 'status': f.get('status')})
+                    results['vulns'].append({
+                        'type': 'reflected',
+                        'url': f['url'],
+                        'param': f.get('param'),
+                        'payload': f.get('payload'),
+                        'status': f.get('status')
+                    })
 
             # scan forms for reflection
             forms_found = await self.scan_forms(url, text)
@@ -194,7 +219,14 @@ class Scanner:
                 page_entry['forms'].extend(forms_found)
                 results['summary']['forms_xss'] += len(forms_found)
                 for ff in forms_found:
-                    results['vulns'].append({'type': 'form', 'url': ff.get('url'), 'form_action': ff.get('form_action'), 'method': ff.get('method'), 'payload': ff.get('payload'), 'status': ff.get('status')})
+                    results['vulns'].append({
+                        'type': 'form',
+                        'url': ff.get('url'),
+                        'form_action': ff.get('form_action'),
+                        'method': ff.get('method'),
+                        'payload': ff.get('payload'),
+                        'status': ff.get('status')
+                    })
 
             # find links to crawl
             if 'html' in content_type or '<html' in text.lower():
@@ -221,7 +253,7 @@ class Scanner:
 
 def make_html_report(json_data, outpath):
     now = time.strftime('%Y-%m-%d %H:%M:%S')
-    title = f"Scan report for {escape(json_data['start_url'])}"
+    title = f"FunkyFuzz — Scan report for {escape(json_data['start_url'])}"
     rows = []
     for url, page in json_data['pages'].items():
         xss_count = len(page.get('xss', [])) + len(page.get('forms', []))
@@ -234,9 +266,13 @@ def make_html_report(json_data, outpath):
         lines = []
         for v in json_data['vulns']:
             if v['type'] == 'reflected':
-                lines.append(f"<li>[Reflected] <a href=\"{escape(v['url'])}\">{escape(v['url'])}</a> param={escape(str(v.get('param')))} payload={escape(v.get('payload'))}</li>")
+                lines.append(
+                    f"<li>[Reflected] <a href=\"{escape(v['url'])}\">{escape(v['url'])}</a> param={escape(str(v.get('param')))} payload={escape(v.get('payload'))}</li>"
+                )
             else:
-                lines.append(f"<li>[Form] <a href=\"{escape(v['url'])}\">{escape(v['url'])}</a> action={escape(str(v.get('form_action')))} payload={escape(v.get('payload'))}</li>")
+                lines.append(
+                    f"<li>[Form] <a href=\"{escape(v['url'])}\">{escape(v['url'])}</a> action={escape(str(v.get('form_action')))} payload={escape(v.get('payload'))}</li>"
+                )
         vulns_html = '<ul>' + '\n'.join(lines) + '</ul>'
     else:
         vulns_html = '<p>None found</p>'
@@ -284,15 +320,43 @@ th,td{{padding:8px;border:1px solid #ddd;text-align:left}}
 # --- CLI / Orchestration ---
 
 async def scan_target(scanner, target, output_dir):
+    """Scan a single target and save reports only if findings are detected."""
     print(f"[+] Scanning {target}")
     result = await scanner.crawl_and_scan(target)
-    filename_safe = target.replace('://', '_').replace('/', '_')[:200]
+
+    # Check for vulnerabilities or sensitive files
+    has_vulns = bool(result.get('vulns'))
+    has_sensitive = bool(result.get('sensitive'))
+
+    # Check pages for any XSS or form-based findings
+    pages = result.get('pages', {})
+    pages_with_findings = 0
+    pages_with_ok_responses = 0
+    for p in pages.values():
+        status = p.get('status')
+        if status and status != 'error':
+            pages_with_ok_responses += 1
+        if p.get('xss') or p.get('forms'):
+            pages_with_findings += 1
+
+    # If no valid findings or all pages errored out, skip saving
+    if not (has_vulns or has_sensitive or pages_with_findings):
+        if pages_with_ok_responses == 0:
+            print(f"[+] No valid pages or findings for {target} — skipping report generation.")
+        else:
+            print(f"[+] No vulnerabilities or sensitive files found for {target} — skipping report generation.")
+        return result
+
+    # Save only when there are relevant results
+    filename_safe = 'funkyfuzz_' + target.replace('://', '_').replace('/', '_')[:190]
     json_path = os.path.join(output_dir, f"{filename_safe}.json")
     html_path = os.path.join(output_dir, f"{filename_safe}.html")
+
     os.makedirs(output_dir, exist_ok=True)
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(result, f, indent=2)
     make_html_report(result, html_path)
+
     print(f"[+] Saved JSON -> {json_path}")
     print(f"[+] Saved HTML  -> {html_path}")
     return result
@@ -315,19 +379,22 @@ async def main(args):
 
     scanner = Scanner(concurrency=args.concurrency, crawl_limit=args.crawl_limit, follow_subdomains=args.follow_subdomains)
     try:
+        # create tasks for each target
         tasks = [scan_target(scanner, t, args.output_dir) for t in targets]
+        # run them concurrently
         results = await asyncio.gather(*tasks)
     finally:
         await scanner.close()
+    return results
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Medium-level XSS/HTMLi + sensitive file scanner (crawler)')
+    parser = argparse.ArgumentParser(description='FunkyFuzz — async XSS/HTMLi + sensitive file scanner (crawler)')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--url', help='Single target URL (e.g. https://example.com)')
     group.add_argument('--input-file', help='File with newline-separated target URLs')
     parser.add_argument('--output-dir', default='reports', help='Directory to save JSON and HTML reports')
-    parser.add_argument('--concurrency', type=int, default=6, help='Concurrent requests')
+    parser.add_argument('--concurrency', type=int, default=6, help='Concurrent requests (scanner-level semaphore)')
     parser.add_argument('--crawl-limit', type=int, default=CRAWL_LIMIT, help='Max pages to crawl per target')
     parser.add_argument('--follow-subdomains', action='store_true', help='Allow crawling across subdomains of the same registered domain')
     args = parser.parse_args()
