@@ -388,7 +388,26 @@ async def main(args):
     return results
 
 
+# --- Banner ---
+def print_banner():
+    banner = r"""
+  ______           _          ______             
+ |  ____|         | |        |  ____|            
+ | |__ _   _ _ __ | | ___   _| |__ _   _ ________
+ |  __| | | | '_ \| |/ / | | |  __| | | |_  /_  /
+ | |  | |_| | | | |   <| |_| | |  | |_| |/ / / / 
+ |_|   \__,_|_| |_|_|\_\\__, |_|   \__,_/___/___|
+                         __/ |                   
+                        |___/                    
+             FunkyFuzz - Web Scanner
+    ✨ XSS | HTML Injection | Sensitive File Finder ✨
+            with love ❤️ from 4n_curze
+    """
+    print("\033[1;36m" + banner + "\033[0m")  # Cyan color
+
+
 if __name__ == '__main__':
+    print_banner()
     parser = argparse.ArgumentParser(description='FunkyFuzz — async XSS/HTMLi + sensitive file scanner (crawler)')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--url', help='Single target URL (e.g. https://example.com)')
